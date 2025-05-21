@@ -11,7 +11,7 @@ jobs:
         with:
           host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
           username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd $HOME/www/
 
@@ -19,12 +19,12 @@ jobs:
     needs: Connexion
     runs-on: ubuntu-latest
     steps:
-      - name: Connexion SSH avec le serveur
+      - name: Connexion SSH et clonage du dépôt
         uses: appleboy/ssh-action@master
         with:
           host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
           username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             last_directory=$(basename ${{ runner.workspace }})
             cd $HOME/www/
@@ -42,33 +42,32 @@ jobs:
     needs: Copy
     runs-on: ubuntu-latest
     steps:
-      - name: Injecter FERNET_KEY dans le code Python sur le serveur
+      - name: Injecter FERNET_KEY dans le fichier .env
         uses: appleboy/ssh-action@master
         with:
           host: "ssh-${{ secrets.USERNAME }}.alwaysdata.net"
           username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd $HOME/www/flask
-            # Crée un fichier .env contenant la clé Fernet depuis les secrets GitHub
             echo "FERNET_KEY=${{ secrets.FERNET_KEY }}" > .env
 
   Restart:
     needs: InjectSecrets
     runs-on: ubuntu-latest
     steps:
-      - name: Restart Alwaysdata site
+      - name: Redémarrer le site Alwaysdata
         run: |
           response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST --basic --user "${{ secrets.ALWAYSDATA_TOKEN }}:" https://api.alwaysdata.com/v1/site/${{ secrets.ALWAYSDATA_SITE_ID }}/restart/)
           if [ "$response_code" -eq 204 ]; then
-            echo "Relance de votre site réussi"
+            echo "✅ Relance du site réussie"
           elif [ "$response_code" -eq 404 ]; then
-            echo "Vous n'avez pas renseigné correctement votre secret ALWAYSDATA_SITE_ID"
+            echo "❌ ALWAYSDATA_SITE_ID incorrect"
             exit 1
           elif [ "$response_code" -eq 401 ]; then
-            echo "Vous n'avez pas renseigné correctement votre secret ALWAYSDATA_TOKEN"
+            echo "❌ ALWAYSDATA_TOKEN incorrect"
             exit 1
           else
-            echo "Échec du redémarrage avec le code de réponse : $response_code"
+            echo "❌ Erreur inconnue (code HTTP : $response_code)"
             exit 1
           fi
