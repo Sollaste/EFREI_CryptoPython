@@ -2,17 +2,16 @@ import os
 from cryptography.fernet import Fernet, InvalidToken
 from flask import Flask, request
 from urllib.parse import unquote
+from dotenv import load_dotenv
+
+load_dotenv()  # Charge le .env si présent
 
 app = Flask(__name__)
 
+# Charger et vérifier la clé
 fernet_key = os.environ.get("FERNET_KEY")
 if not fernet_key:
-    raise ValueError("FERNET_KEY manquante.")
-f = Fernet(fernet_key.encode())
-
-if not fernet_key:
     raise ValueError("Clé Fernet manquante. Définis FERNET_KEY dans tes variables d'environnement.")
-
 f = Fernet(fernet_key.encode())
 
 @app.route('/')
@@ -35,6 +34,5 @@ def decryptage(valeur):
     except InvalidToken:
         return "Erreur : Token invalide", 400
 
-                                                                                                                                                     
 if __name__ == "__main__":
-  app.run(debug=True)
+    app.run(debug=True)
