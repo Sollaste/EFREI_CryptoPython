@@ -5,8 +5,10 @@ from urllib.parse import unquote
 
 app = Flask(__name__)
 
-# Charger la clé depuis la variable d'environnement
 fernet_key = os.environ.get("FERNET_KEY")
+if not fernet_key:
+    raise ValueError("FERNET_KEY manquante.")
+f = Fernet(fernet_key.encode())
 
 if not fernet_key:
     raise ValueError("Clé Fernet manquante. Définis FERNET_KEY dans tes variables d'environnement.")
